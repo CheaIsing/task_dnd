@@ -181,7 +181,7 @@ const useTaskStore = create((set, get) => ({
         ),
       }));
 
-      showToast("success", "Update Task Successfully.");
+      // showToast("success", "Update Task Successfully.");
     } catch (error) {
       console.log(error);
       showToast("error", "Failed to update task");

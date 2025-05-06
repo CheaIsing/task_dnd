@@ -450,6 +450,7 @@ import useTaskStore from "../store/taskStore";
 import { axiosInstance } from "../utils/axiosConfig";
 import { showToast } from "../utils/toast";
 import { EllipsisVerticalIcon } from "lucide-react";
+import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 
 // Our simplified Task Manager application
 function TaskManager() {
@@ -483,101 +484,118 @@ function TaskManager() {
     updateTaskStatus(taskId, newStatus);
   };
 
+  function handleDragEnd(e) {
+    console.log(e);
+
+    const taskId = e.active.id;
+
+    const newStatus = e.over.id;
+    if (taskId && newStatus) {
+      updateTaskStatus(taskId, newStatus);
+    }
+  }
+
   return (
-    <div className="container mt-4">
-      {/* Header section */}
-      <div className="d-flex justify-content-between align-items-center">
-        <h1 className="mb-4">Task Manager</h1>
-        <div>
-          <button
-            className="btn btn-outline-secondary me-2"
-            onClick={getAllTasks}
-          >
-            {isLoading ? "Loading..." : "Refresh"}
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowAddModal(true)}
-          >
-            Add New Task
-          </button>
+    <DndContext onDragEnd={handleDragEnd}>
+      <div className="container mt-4">
+        {/* Header section */}
+        <div className="d-flex justify-content-between align-items-center">
+          <h1 className="mb-4">Task Manager</h1>
+          <div>
+            <button
+              className="btn btn-outline-secondary me-2"
+              onClick={getAllTasks}
+            >
+              {isLoading ? "Loading..." : "Refresh"}
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowAddModal(true)}
+            >
+              Add New Task
+            </button>
+          </div>
         </div>
+
+        {/* Show error message if there is one */}
+        {error && (
+          <div className="alert alert-danger my-3" role="alert">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+
+        {/* Show loading spinner if loading and no tasks */}
+
+        {isLoading && tasks.length === 0 ? (
+          <div className="d-flex justify-content-center my-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        ) : (
+          /* Task board with columns */
+          <div className="row">
+            <div className="col-md-4">
+              <TaskColumn
+                title="Pending"
+                status="pending"
+                tasks={tasks}
+                onMoveTask={handleMoveTask}
+              />
+            </div>
+            <div className="col-md-4">
+              <TaskColumn
+                title="In Progress"
+                status="in_progress"
+                tasks={tasks}
+                onMoveTask={handleMoveTask}
+              />
+            </div>
+            <div className="col-md-4">
+              <TaskColumn
+                title="Completed"
+                status="completed"
+                tasks={tasks}
+                onMoveTask={handleMoveTask}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Show Add Task Modal if requested */}
+        {showAddModal && (
+          <AddTaskModal
+            onClose={() => setShowAddModal(false)}
+            onSubmit={(taskData) => {
+              console.log(taskData);
+
+              addTask(taskData);
+              setShowAddModal(false);
+            }}
+          />
+        )}
+
+        {showUpdateModal && updateId && (
+          <UpdateTaskModal
+            onClose={() => setShowUpdateModal(false)}
+            onSubmit={(updateId, taskData) => {
+              updateTask(updateId, taskData);
+              setShowUpdateModal(false);
+            }}
+          />
+        )}
       </div>
-
-      {/* Show error message if there is one */}
-      {error && (
-        <div className="alert alert-danger my-3" role="alert">
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-
-      {/* Show loading spinner if loading and no tasks */}
-
-      {isLoading && tasks.length === 0 ? (
-        <div className="d-flex justify-content-center my-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
-      ) : (
-        /* Task board with columns */
-        <div className="row">
-          <div className="col-md-4">
-            <TaskColumn
-              title="Pending"
-              status="pending"
-              tasks={tasks}
-              onMoveTask={handleMoveTask}
-            />
-          </div>
-          <div className="col-md-4">
-            <TaskColumn
-              title="In Progress"
-              status="in_progress"
-              tasks={tasks}
-              onMoveTask={handleMoveTask}
-            />
-          </div>
-          <div className="col-md-4">
-            <TaskColumn
-              title="Completed"
-              status="completed"
-              tasks={tasks}
-              onMoveTask={handleMoveTask}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Show Add Task Modal if requested */}
-      {showAddModal && (
-        <AddTaskModal
-          onClose={() => setShowAddModal(false)}
-          onSubmit={(taskData) => {
-            console.log(taskData);
-            
-            addTask(taskData);
-            setShowAddModal(false);
-          }}
-        />
-      )}
-
-      {showUpdateModal && updateId && (
-        <UpdateTaskModal
-          onClose={() => setShowUpdateModal(false)}
-          onSubmit={(updateId, taskData) => {
-            updateTask(updateId,taskData);
-            setShowUpdateModal(false);
-          }}
-        />
-      )}
-    </div>
+    </DndContext>
   );
 }
 
 // Task Column Component
 function TaskColumn({ title, status, tasks, onMoveTask }) {
   // Filter tasks that belong to this column
+  const { isOver, setNodeRef } = useDroppable({
+    id: status,
+  });
+
   const tasksInColumn = tasks.filter((task) => task.status == status);
 
   // Get appropriate badge color based on status
@@ -595,7 +613,7 @@ function TaskColumn({ title, status, tasks, onMoveTask }) {
   };
 
   return (
-    <div className="card h-100">
+    <div ref={setNodeRef} className="card h-100">
       <div className="card-header d-flex justify-content-between align-items-center">
         <h5 className="mb-0">{title}</h5>
         <span className={`badge bg-${getBadgeColor(status)}`}>
@@ -617,8 +635,19 @@ function TaskColumn({ title, status, tasks, onMoveTask }) {
 
 // Task Card Component
 function TaskCard({ task, onMoveTask }) {
-  const { showUpdateModal, setShowUpdateModal, setUpdateId, deleteTask} = useTaskStore();
-  // Get color class for the priority badge
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: task._id,
+  });
+
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
+
+  const { showUpdateModal, setShowUpdateModal, setUpdateId, deleteTask } =
+    useTaskStore();
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case "high":
@@ -631,45 +660,88 @@ function TaskCard({ task, onMoveTask }) {
         return "secondary";
     }
   };
+  const getStatusColor = (priority) => {
+    switch (priority) {
+      case "pending":
+        return "danger";
+      case "in_progress":
+        return "warning";
+      case "completed":
+        return "success";
+      default:
+        return "secondary";
+    }
+  };
 
-  // Handle moving a task to a different status
   const moveTask = (newStatus) => {
     if (task.status !== newStatus) {
       onMoveTask(task._id, newStatus);
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = (e) => {
+    e.stopPropagation();
     setShowUpdateModal(true);
     setUpdateId(task._id);
   };
 
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    deleteTask(task._id);
+  };
+
   return (
-    <div className="card mb-2 shadow-sm">
+    <div
+      ref={setNodeRef}
+      style={{ ...style, cursor: "grab", border: `2px solid ${getStatusColor(task.status)}` }}
+      className="card mb-2 shadow-sm"
+      {...listeners}
+      {...attributes}
+    >
       <div className="card-body">
         <div className="d-flex align-items-start justify-content-between">
-          <div>
+          <div className="flex-grow-1">
             <h5 className="card-title">{task.title}</h5>
             <p className="card-text">{task.description}</p>
           </div>
-          <div className="dropdown ">
+
+          <div className="dropdown" {...Object.keys(listeners).reduce((acc, key) => {
+                acc[key] = (e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                };
+                return acc;
+              }, {})}>
             <button
               className="btn btn-sm btn-outline-secondary dropdown-toggle"
               type="button"
               data-bs-toggle="dropdown"
+              // Prevent drag when clicking the button
+              onMouseDown={(e) => e.stopPropagation()}
             >
               <EllipsisVerticalIcon />
             </button>
-            <ul className="dropdown-menu">
+            <ul className="dropdown-menu" {...Object.keys(listeners).reduce((acc, key) => {
+                acc[key] = (e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                };
+                return acc;
+              }, {})}>
               <li>
-                <button className="dropdown-item" onClick={handleEdit}>
+                <button
+                  className="dropdown-item"
+                  onClick={handleEdit}
+                  
+                >
                   Edit
                 </button>
               </li>
               <li>
                 <button
                   className="dropdown-item"
-                  onClick={()=>{deleteTask(task._id)}}
+                  onClick={handleDelete}
+                  onMouseDown={(e) => e.stopPropagation()}
                 >
                   Delete
                 </button>
@@ -677,50 +749,20 @@ function TaskCard({ task, onMoveTask }) {
             </ul>
           </div>
         </div>
+
         <div className="d-flex justify-content-between align-items-center">
           <span className={`badge bg-${getPriorityColor(task.priority)}`}>
             {task.priority.toUpperCase()}
           </span>
-          <div className="dropdown">
-            <button
-              className="btn btn-sm btn-outline-secondary dropdown-toggle"
-              type="button"
-              data-bs-toggle="dropdown"
-            >
-              Move to
-            </button>
-            <ul className="dropdown-menu">
-              <li>
-                <button
-                  className="dropdown-item"
-                  onClick={() => moveTask("pending")}
-                >
-                  Pending
-                </button>
-              </li>
-              <li>
-                <button
-                  className="dropdown-item"
-                  onClick={() => moveTask("in_progress")}
-                >
-                  In Progress
-                </button>
-              </li>
-              <li>
-                <button
-                  className="dropdown-item"
-                  onClick={() => moveTask("completed")}
-                >
-                  Completed
-                </button>
-              </li>
-            </ul>
-          </div>
+          <span className={`badge bg-${getStatusColor(task.status)}`}>
+            {task.status.toUpperCase()}
+          </span>
         </div>
       </div>
     </div>
   );
 }
+
 
 // Add Task Modal Component
 function AddTaskModal({ onClose, onSubmit }) {
@@ -735,7 +777,7 @@ function AddTaskModal({ onClose, onSubmit }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  const {updateId} = useTaskStore()
+  const { updateId } = useTaskStore();
 
   // Handle form input changes
 
@@ -884,16 +926,14 @@ function UpdateTaskModal({ onClose, onSubmit }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(()=>{
-    const updateTask = tasks.filter(task=>task._id == updateId)[0];
+  useEffect(() => {
+    const updateTask = tasks.filter((task) => task._id == updateId)[0];
 
-    setTitle(updateTask.title)
-    setDescription(updateTask.description)
-    setStatus(updateTask.status)
-    setPriority(updateTask.priority)
-
-
-  }, [updateId])
+    setTitle(updateTask.title);
+    setDescription(updateTask.description);
+    setStatus(updateTask.status);
+    setPriority(updateTask.priority);
+  }, [updateId]);
   // Handle form input changes
 
   // Handle form submission
@@ -910,7 +950,7 @@ function UpdateTaskModal({ onClose, onSubmit }) {
     }
 
     // Submit the form
-    onSubmit(updateId,{
+    onSubmit(updateId, {
       title,
       description,
       status,

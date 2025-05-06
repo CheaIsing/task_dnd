@@ -32,9 +32,6 @@ class UserController {
     try {
       const { email, password } = req.body;
 
-      // console.log(email);
-      // console.log(password);
-      
       const existingEmail = await User.findOne({ email });
 
       if (!existingEmail) {

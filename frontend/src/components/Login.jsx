@@ -5,8 +5,8 @@ import { axiosInstance } from "../utils/axiosConfig";
 import useAuthStore from "../store/authStore";
 
 const Login = () => {
-  const [email, setEmail] = useState("ising@gmail.com");
-  const [password, setPassword] = useState("11111111");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const {user, setUser} = useAuthStore()
@@ -36,7 +36,7 @@ const Login = () => {
       // setUser(user)
 
     } catch (error) {
-      showToast("error", error.message);
+      showToast('error', error?.response?.data?.message || error.message)
       console.log(error);
       
     }finally{

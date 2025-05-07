@@ -44,7 +44,12 @@ class TaskController {
 
     try {
       
-      const task = await Task.create({ title, description, status, user, priority });
+      let task = await Task.create({ title, description, status, user, priority });
+
+      task = await task.populate({
+        path: 'user',
+        select: '-password'
+      });
 
       sendResponse(res, 200, true, "Create task successfully.", task);
     } catch (error) {
@@ -64,11 +69,21 @@ class TaskController {
 
     try {
       const updateTask = {title, description, status, priority}
-      const task = await Task.findByIdAndUpdate(_id, updateTask, {new: true, runValidators: true});
+      let task = await Task.findByIdAndUpdate(_id, updateTask, {new: true, runValidators: true});
 
       if(!task){
         return sendResponse(res, 400, false, "Task is not found.");
        }
+
+       task = await task.populate({
+        path: 'user',
+        select: '-password'
+      });
+
+       const io = req.app.get("io");
+
+       io.to(user).emit("update_task", task);
+
 
       sendResponse(res, 200, true, "Update task successfully.", task);
     } catch (error) {
@@ -88,11 +103,16 @@ class TaskController {
         return sendResponse(res, 400, false, "Task is not found.");
       }
 
-      const task = await Task.findByIdAndDelete(_id);
+      let task = await Task.findByIdAndDelete(_id);
 
       if(!task){
        return sendResponse(res, 400, false, "Task is not found.");
       }
+
+      task = await task.populate({
+        path: 'user',
+        select: '-password'
+      });
 
       sendResponse(res, 200, true, "Delete task successfully.", task);
     } catch (error) {

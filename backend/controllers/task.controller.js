@@ -51,6 +51,10 @@ class TaskController {
         select: '-password'
       });
 
+      const io = req.app.get("io");
+
+      io.to(user).emit("create_task", task)
+
       sendResponse(res, 200, true, "Create task successfully.", task);
     } catch (error) {
       console.error("TaskController createTask() error ", error);
@@ -113,6 +117,10 @@ class TaskController {
         path: 'user',
         select: '-password'
       });
+
+      const io = req.app.get("io");
+
+      io.to(user).emit("delete_task", task)
 
       sendResponse(res, 200, true, "Delete task successfully.", task);
     } catch (error) {

@@ -131,7 +131,7 @@ const useTaskStore = create((set, get) => ({
 
       set({ tasks: tasks, error: null });
 
-      console.log(tasks);
+      // console.log(tasks);
     } catch (error) {
       console.log(error);
       set({ tasks: [], error: error.message || "Failed to fetch tasks." });
@@ -148,9 +148,9 @@ const useTaskStore = create((set, get) => ({
       const { data } = await axiosInstance.post("/tasks", task);
       const { data: newTask } = data;
 
-      set((state) => ({
-        tasks: [...state.tasks, newTask],
-      }));
+      // set((state) => ({
+      //   tasks: [...state.tasks, newTask],
+      // }));
 
       showToast("success", "Task added successfully.");
     } catch (error) {
@@ -175,11 +175,11 @@ const useTaskStore = create((set, get) => ({
     try {
       await axiosInstance.put("/tasks/" + taskId, updateTask);
 
-      set((state) => ({
-        tasks: state.tasks.map((task) =>
-          task._id == taskId ? { ...task, status: newStatus } : task
-        ),
-      }));
+      // set((state) => ({
+      //   tasks: state.tasks.map((task) =>
+      //     task._id == taskId ? { ...task, status: newStatus } : task
+      //   ),
+      // }));
 
       // showToast("success", "Update Task Successfully.");
     } catch (error) {
@@ -202,9 +202,9 @@ const useTaskStore = create((set, get) => ({
       const {data} = await axiosInstance.put("/tasks/" + taskId, updateTask);
       const {data:newUpdateTask} = data
 
-      set((state) => ({
-        tasks: state.tasks.map(task=>task._id == taskId ? newUpdateTask :task)
-      }));
+      // set((state) => ({
+      //   tasks: state.tasks.map(task=>task._id == taskId ? newUpdateTask :task)
+      // }));
 
       showToast("success", "Update Task Successfully.");
     } catch (error) {
@@ -218,9 +218,9 @@ const useTaskStore = create((set, get) => ({
       const currentTasks = get().tasks;
       const newTasks = currentTasks.filter(task=>task._id != id)
 
-      set((state) => ({
-        tasks: newTasks
-      }));
+      // set((state) => ({
+      //   tasks: newTasks
+      // }));
 
       showToast("success", "Delete Task Successfully.");
     } catch (error) {

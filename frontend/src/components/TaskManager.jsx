@@ -485,7 +485,6 @@ function TaskManager() {
   };
 
   function handleDragEnd(e) {
-    console.log(e);
 
     const taskId = e.active.id;
 
@@ -635,15 +634,21 @@ function TaskColumn({ title, status, tasks, onMoveTask }) {
 
 // Task Card Component
 function TaskCard({ task, onMoveTask }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: task._id,
-  });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: task._id,
+    });
 
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
       }
     : undefined;
+
+  const dragStyle = {
+    position: "relative",
+    zIndex: isDragging ? 200 : 1,
+  };
 
   const { showUpdateModal, setShowUpdateModal, setUpdateId, deleteTask } =
     useTaskStore();
@@ -673,12 +678,6 @@ function TaskCard({ task, onMoveTask }) {
     }
   };
 
-  const moveTask = (newStatus) => {
-    if (task.status !== newStatus) {
-      onMoveTask(task._id, newStatus);
-    }
-  };
-
   const handleEdit = (e) => {
     e.stopPropagation();
     setShowUpdateModal(true);
@@ -693,7 +692,12 @@ function TaskCard({ task, onMoveTask }) {
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, cursor: "grab", border: `2px solid ${getStatusColor(task.status)}` }}
+      style={{
+        ...style,
+        ...dragStyle,
+        cursor: "grab",
+        border: `2px solid ${getStatusColor(task.status)}`,
+      }}
       className="card mb-2 shadow-sm"
       {...listeners}
       {...attributes}
@@ -705,13 +709,16 @@ function TaskCard({ task, onMoveTask }) {
             <p className="card-text">{task.description}</p>
           </div>
 
-          <div className="dropdown" {...Object.keys(listeners).reduce((acc, key) => {
-                acc[key] = (e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                };
-                return acc;
-              }, {})}>
+          <div
+            className="dropdown"
+            {...Object.keys(listeners).reduce((acc, key) => {
+              acc[key] = (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              };
+              return acc;
+            }, {})}
+          >
             <button
               className="btn btn-sm btn-outline-secondary dropdown-toggle"
               type="button"
@@ -721,19 +728,18 @@ function TaskCard({ task, onMoveTask }) {
             >
               <EllipsisVerticalIcon />
             </button>
-            <ul className="dropdown-menu" {...Object.keys(listeners).reduce((acc, key) => {
+            <ul
+              className="dropdown-menu"
+              {...Object.keys(listeners).reduce((acc, key) => {
                 acc[key] = (e) => {
                   e.stopPropagation();
                   e.preventDefault();
                 };
                 return acc;
-              }, {})}>
+              }, {})}
+            >
               <li>
-                <button
-                  className="dropdown-item"
-                  onClick={handleEdit}
-                  
-                >
+                <button className="dropdown-item" onClick={handleEdit}>
                   Edit
                 </button>
               </li>
@@ -762,7 +768,6 @@ function TaskCard({ task, onMoveTask }) {
     </div>
   );
 }
-
 
 // Add Task Modal Component
 function AddTaskModal({ onClose, onSubmit }) {
